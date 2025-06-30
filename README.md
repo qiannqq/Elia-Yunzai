@@ -1,81 +1,25 @@
-# Miao-Yunzai v3
+# Elia-Yunzai v3 伊莉雅
+ 由Miao-Yunzai修改，轻量化版
 
-基于乐神版[云崽v3.0](https://gitee.com/le-niao/Yunzai-Bot) 改造，需要同时安装[miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin.git) 
+<p align="center">
+  <img src="./resources/elia.png" width="70%" height="70%">
+</p>
 
-对数据结构进行了改造，无法直接迁回原版Yunzai，请根据自己需求情况慎重安装！
-
-使用[icqq](https://github.com/icqqjs/icqq) 登录，防止oicq可能出现的低版本问题
-
-## 使用方法
-
-> 必要环境 Windows/Linux + Chrome/Chromium/Edge
-
-> 必要环境 Node.js>16.14.0 + Redis>5.0.0
-
-> 推荐环境 Node.js=18.18.2 + Redis>6.0.0
-
-> 推荐使用NVM对Node.js进行版本管理
-
-### 克隆项目
-
-> 请根据网络情况选择Github安装或Gitee安装
-
-```sh
-# 使用 Github 
-git clone --depth=1 https://github.com/yoimiya-kokomi/Miao-Yunzai.git
-cd Miao-Yunzai 
-git clone --depth=1 https://github.com/yoimiya-kokomi/miao-plugin.git ./plugins/miao-plugin/
-```
-
-```sh
-# 使用Gitee
-git clone --depth=1 https://gitee.com/yoimiya-kokomi/Miao-Yunzai.git
-cd Miao-Yunzai 
-git clone --depth=1 https://gitee.com/yoimiya-kokomi/miao-plugin.git ./plugins/miao-plugin/
-```
-
-### 安装[pnpm](https://pnpm.io/zh/installation)
-
-> 已安装的可以跳过
-
-```sh
-npm install pnpm -g
-```
-
-###  安装依赖
-
-> 外网环境请修改的本地npm配置.npmrc
-
-```sh
-# 直接安装
-pnpm install -P
-```
-
-### 运行
-
-> 首次运行按提示输入登录
-
-```sh
-npm run app
-```
-
-### 登录
-
-```sh
-npm run login
-```
-
-### 托管
-
-```sh
-npm run start
-```
-## 致谢
-
-|                           Nickname                            | Contribution     |
-|:-------------------------------------------------------------:|------------------|
-|      [Yunzai v3.0](https://gitee.com/le-niao/Yunzai-Bot)      | 乐神的Yunzai-Bot V3 |
-| [GardenHamster](https://github.com/GardenHamster/GenshinPray) | 模拟抽卡背景素材来源       |
-|      [西风驿站](https://bbs.mihoyo.com/ys/collection/839181)      | 角色攻略图来源          |
-|     [米游社友人A](https://bbs.mihoyo.com/ys/collection/428421)     | 角色突破素材图来源        |
-| [icqq](https://github.com/icqqjs/icqq) | ICQQ             |
+ #### 简介
+ 开发该Yunzai的目的是本组织成员不便迁移到TRSS-Yunzai，又需要一个轻量化但可以正常使用的Miao-Yunzai，因此Elia-Yunzai诞生了
+ #### 说明
+ 1. 内置Stdin标准输入，可以直接在控制台执行指令
+ 2. 默认跳过ICQQ登录，需要可以在配置文件中打开
+ 3. 已移除对miao-plugin的依赖，并删除了genshin
+ 4. 虽然是移除了对miao-plugin的依赖，但部分插件可能需要用到miao-plugin，因此建议安装miao-plugin
+ 5. Elia-Yunzai 底层不会与 Miao-Yunzai 实时同步
+ #### 安装Elia-Yunzai
+ ```
+ git clone --depth=1 https://gitee.com/Orbiter_StellarTrek/Elia-Yunzai.git
+ cd Elia-Yunzai
+ pnpm i
+ ```
+ #### 安装genshin
+ ```
+ git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugins/genshin
+ ```
