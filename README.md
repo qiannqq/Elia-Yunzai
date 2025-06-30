@@ -2,7 +2,7 @@
  由Miao-Yunzai修改，轻量化版
 
 <p align="center">
-  <img src="./resources/elia.png" width="70%" height="70%">
+  <img src="./resources/elia.png" width="30%" height="30%">
 </p>
 
  #### 简介
