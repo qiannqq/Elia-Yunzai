@@ -27,16 +27,8 @@ if (!fs.existsSync("temp/stdin")) fs.mkdirSync("temp/stdin")
 
 /** Bot初始化 */
 Bot['stdin'] = {
-  pickGroup: async (gid) => {
-    return {
-      sendMsg: await sendMsg(msg)
-    }
-  },
-  pickUser: async (uid) => {
-    return {
-      sendMsg: await sendMsg(msg)
-    }
-  },
+  pickGroup: (gid) => pickGroup(gid),
+  pickUser: (uid) => pickUser(uid),
   uin: 'stdin',
   nickname: 'Elia-Yunzai Stdin',
   getAvatarUrl: () => {
@@ -47,6 +39,18 @@ Bot['stdin'] = {
   version: {
     version: 'Elia-Yunzai v3.1.3',
     name: 'Elia-Yunzai Stdin'
+  }
+}
+
+function pickGroup(gid) {
+  return {
+    sendMsg: async (msg) => await sendMsg(msg)
+  }
+}
+
+function pickUser(uid) {
+  return {
+    sendMsg: async (msg) => await sendMsg(msg)
   }
 }
 
@@ -171,12 +175,14 @@ async function sendMsg(msg) {
         image = image.toString('base64')
         fs.writeFileSync('temp/stdin/stdin.jpg', image, `base64`)
         if (os.platform() == "win32") exec(`start .\\temp\\stdin\\stdin.jpg`)
-        logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)}图片已存储至temp/stdin/stdin.jpg`)
+        logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)} 图片已存储至temp/stdin/stdin.jpg`)
       } catch (error) { }
     }
   } catch (error) { }
 
-  return logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)}发送消息：${log.join('\n')}`)
+  return logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)} 发送消息：${log.join('\n')}`)
 }
 
-logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)}加载完成，现在你可以在控制台输入指令啦~`)
+logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)} Elia-Yunzai 标准输入已加载，可在控制台输入指令`)
+
+Bot.emit('system.online', { post_type: 'system', notice_type: 'online' })
