@@ -5,12 +5,12 @@ import os from "os"
 import { exec } from "child_process";
 
 /**
- *  该JS插件的绝大多数代码来自于该仓库 （https://gitee.com/Zyy955/Yunzai-Bot-plugin/blob/main/apps.js） 
- *  因此可以认定其原作者为Zyy955(该仓库所有者) 
- *  
+ *  该JS插件的绝大多数代码来自于该仓库 （https://gitee.com/Zyy955/Yunzai-Bot-plugin/blob/main/apps.js）
+ *  因此可以认定其原作者为Zyy955(该仓库所有者)
+ *
  *  原作者：Zyy955 (gitee.com/Zyy955)
  *  修改者：千奈千祁 (gitee.com/qiannqq)
- *  
+ *
  *  标准输入的所有版本发布于 该仓库(https://gitee.com/qiannqq/yunzai-plugin-JS)
  *  本插件遵循的开源协议遵循原仓库的开源协议，若原仓库无开源协议，则本插件不遵循任何开源协议
  *
@@ -24,6 +24,34 @@ const pluginsLoader = (await import("../../lib/plugins/loader.js")).default
 
 /** 检查图片文件夹是否存在 */
 if (!fs.existsSync("temp/stdin")) fs.mkdirSync("temp/stdin")
+
+/** Bot初始化 */
+Bot['stdin'] = {
+  pickGroup: async (gid) => {
+    return {
+      sendMsg: await sendMsg(msg)
+    }
+  },
+  pickUser: async (uid) => {
+    return {
+      sendMsg: await sendMsg(msg)
+    }
+  },
+  uin: 'stdin',
+  nickname: 'Elia-Yunzai Stdin',
+  getAvatarUrl: () => {
+    return `https://q1.qlogo.cn/g?b=qq&s=0&nk=3966902446`
+  },
+  avatar: `https://q1.qlogo.cn/g?b=qq&s=0&nk=3966902446`,
+  stat: { start_time: Date.now() / 1000, recv_msg_cnt: 0 },
+  version: {
+    version: 'Elia-Yunzai v3.1.3',
+    name: 'Elia-Yunzai Stdin'
+  }
+}
+
+if(!Bot.adapter || !Array.isArray(Bot.adapter)) Bot.adapter = []
+Bot.adapter.push('stdin')
 
 /** 监听控制台输入 */
 const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -48,10 +76,10 @@ function msg(msg) {
         message_type: "private",
         post_type: "message",
         sub_type: "friend",
-        self_id: Bot.uin,
+        self_id: 'stdin',
         seq: 888,
         time,
-        uin: Bot.uin,
+        uin: 'stdin',
         user_id,
         message: [{ type: "text", text: msg }],
         raw_message: msg,
@@ -61,7 +89,7 @@ function msg(msg) {
     /** 用户个人信息 */
     e.sender = {
         card: name,
-        nickname: name,
+        nickname: 'Elia-Yunzai Console',
         role: "",
         user_id
     }
@@ -70,12 +98,12 @@ function msg(msg) {
     const member = {
         info: {
             user_id,
-            nickname: name,
+            nickname: 'Elia-Yunzai Console',
             last_sent_time: time,
         },
         /** 获取头像 */
         getAvatarUrl: () => {
-            return `https://q1.qlogo.cn/g?b=qq&s=0&nk=528952540`
+            return `https://q1.qlogo.cn/g?b=qq&s=0&nk=3966902446`
         }
     }
 
@@ -116,39 +144,39 @@ function msg(msg) {
     e.reply = async (reply) => {
         return await sendMsg(reply)
     }
-
-    /** 发送消息 */
-    async function sendMsg(msg) {
-        if (!Array.isArray(msg)) msg = [msg]
-        let log = []
-        let raw_log = []
-        for (const i of msg) {
-            if (typeof i === "string") {
-                log.push(i)
-                raw_log.push(i)
-            } else {
-                log.push(JSON.stringify(msg).slice(0, 1000))
-                raw_log.push(JSON.stringify(msg))
-            }
-        }
-        let image
-        /** 尝试存储图片，若报错则不做任何处理 */
-        try {
-            raw_log = JSON.parse(raw_log[0])
-            for (let item of raw_log) {
-                try{
-                    image = Buffer.from(item.file.data)
-                    image = image.toString('base64')
-                    fs.writeFileSync('temp/stdin/stdin.jpg', image, `base64`)
-                    if(os.platform() == "win32") exec(`start .\\temp\\stdin\\stdin.jpg`)
-                    logger.mark(`${chalk.hex("#868ECC")(`[${name}]`)}图片已存储至temp/stdin/stdin.jpg`)
-                } catch(error) { }
-            }
-        } catch(error) { }
-        
-        return logger.info(`${chalk.hex("#868ECC")(`[${name}]`)}发送消息：${log.join('\n')}`)
-    }
     return e
+}
+
+/** 发送消息 */
+async function sendMsg(msg) {
+  if (!Array.isArray(msg)) msg = [msg]
+  let log = []
+  let raw_log = []
+  for (const i of msg) {
+    if (typeof i === "string") {
+      log.push(i)
+      raw_log.push(i)
+    } else {
+      log.push(JSON.stringify(msg).slice(0, 1000))
+      raw_log.push(JSON.stringify(msg))
+    }
+  }
+  let image
+  /** 尝试存储图片，若报错则不做任何处理 */
+  try {
+    raw_log = JSON.parse(raw_log[0])
+    for (let item of raw_log) {
+      try {
+        image = Buffer.from(item.file.data)
+        image = image.toString('base64')
+        fs.writeFileSync('temp/stdin/stdin.jpg', image, `base64`)
+        if (os.platform() == "win32") exec(`start .\\temp\\stdin\\stdin.jpg`)
+        logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)}图片已存储至temp/stdin/stdin.jpg`)
+      } catch (error) { }
+    }
+  } catch (error) { }
+
+  return logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)}发送消息：${log.join('\n')}`)
 }
 
 logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)}加载完成，现在你可以在控制台输入指令啦~`)
