@@ -39,7 +39,10 @@ Bot['stdin'] = {
   version: {
     version: 'Elia-Yunzai v3.1.3',
     name: 'Elia-Yunzai Stdin'
-  }
+  },
+  gl: new Map(),
+  fl: new Map(),
+  gml: new Map()
 }
 
 function pickGroup(gid) {
