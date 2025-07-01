@@ -62,7 +62,7 @@ const rl = createInterface({ input: process.stdin, output: process.stdout })
 rl.on('SIGINT', () => { rl.close(); process.exit() })
 function getInput() {
     rl.question('', async (input) => {
-        logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)}收到消息：${input}`)
+        logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)} 收到消息：${input}`)
         await pluginsLoader.deal(msg(input.trim()))
         getInput()
     })
@@ -120,7 +120,7 @@ function msg(msg) {
             return await sendMsg(reply)
         },
         recallMsg: (msg_id) => {
-            return logger.mark(`${chalk.hex("#868ECC")(`[${name}]`)}撤回消息：${msg_id}`)
+            return logger.mark(`${chalk.hex("#868ECC")(`[${name}]`)} 撤回消息：${msg_id}`)
 
         },
         makeForwardMsg: async (forwardMsg) => {
@@ -142,7 +142,7 @@ function msg(msg) {
 
     /** 快速撤回 */
     e.recall = () => {
-        return logger.mark(`${chalk.hex("#868ECC")(`[${name}]`)}撤回消息：${msg.id}`)
+        return logger.mark(`${chalk.hex("#868ECC")(`[${name}]`)} 撤回消息：${msg.id}`)
     }
     /** 快速回复 */
     e.reply = async (reply) => {
