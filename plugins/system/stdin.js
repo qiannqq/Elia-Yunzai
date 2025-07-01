@@ -188,4 +188,4 @@ async function sendMsg(msg) {
 
 logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)} Elia-Yunzai 标准输入已加载，可在控制台输入指令`)
 
-Bot.emit('system.online', { post_type: 'system', notice_type: 'online' })
+Bot.emit('system.online', { post_type: 'system', notice_type: 'online', self_id: 'stdin' })
