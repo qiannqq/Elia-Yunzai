@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MacOS 终端模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+            background-image: url('https://t.alcy.cc/moemp');
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .terminal-container {
+            width: 800px;
+            min-height: 500px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            height: 40px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .window-control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .close { background: #ff5f57; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .terminal-body {
+            background: #1e1e1e;
+            min-height: calc(500px - 40px);
+            padding: 20px;
+            overflow-y: auto;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .prompt {
+            color: #00ff00;
+            margin-bottom: 5px;
+        }
+
+        .output {
+            margin-bottom: 2px;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            word-break: break-all;
+            overflow-wrap: break-word;
+        }
+
+        .color-black { color: #000000; }
+        .color-red { color: #ff0000; }
+        .color-green { color: #00ff00; }
+        .color-blue { color: #0000ff; }
+        .color-yellow { color: #ffff00; }
+        .color-cyan { color: #00ffff; }
+        .color-magenta { color: #ff00ff; }
+        .color-white { color: #ffffff; }
+        .color-gray { color: #808080; }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: #fff;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="window-controls">
+                <div class="window-control close"></div>
+                <div class="window-control minimize"></div>
+                <div class="window-control maximize"></div>
+            </div>
+            <div class="terminal-title">Yunzai</div>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+            {{ each data i }}
+                <div class="output">{{@ i }}</div>
+            {{/each}}
+        </div>
+    </div>
+</body>
+</html>
