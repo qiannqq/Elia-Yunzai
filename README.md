@@ -15,6 +15,7 @@
  2. 默认跳过登录ICQQ，需要可以在配置文件中打开
  3. 重写Redis启动逻辑
  4. 移除Render对miao-plugin的依赖
+ 5. 修复PluginsLoader.changePlugin的Bug，现在插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）。
 
  ### 增加的机制
  1. 内置Stdin标准输入，可以直接在控制台执行指令
