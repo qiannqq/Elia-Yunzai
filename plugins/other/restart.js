@@ -1,7 +1,6 @@
 import plugin from '../../lib/plugins/plugin.js'
 import { createRequire } from 'module'
 import fetch from 'node-fetch'
-import net from 'net'
 import fs from 'fs'
 import YAML from 'yaml'
 import common from '../../lib/common/common.js'
@@ -9,14 +8,23 @@ import common from '../../lib/common/common.js'
 const require = createRequire(import.meta.url)
 const { exec, spawn } = require('child_process')
 
-const isPortTaken = async (port) => {
-  return new Promise((resolve) => {
-    const tester = net.createServer()
-      .once('error', () => resolve(true))
-      .once('listening', () => tester.once('close', () => resolve(false)).close())
-      .listen(port);
-  });
-};
+const restartApiPath = '/__elia_yunzai_restart_api__'
+const restartApiReadyText = 'ELIA_YUNZAI_KSR'
+
+const hasKsrRestartApi = async (port) => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 1000)
+
+  try {
+    const response = await fetch(`http://localhost:${port}${restartApiPath}`, { signal: controller.signal })
+    const result = (await response.text()).trim()
+    return response.ok && result === restartApiReadyText
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 export class Restart extends plugin {
   constructor(e = '') {
@@ -39,6 +47,21 @@ export class Restart extends plugin {
     if (e) this.e = e
 
     this.key = 'Yz:restart'
+  }
+
+  runPm2Action(action) {
+    const localPm2 = `${process.cwd()}/node_modules/pm2/bin/pm2`
+    const hasLocalPm2 = fs.existsSync(localPm2)
+    const command = hasLocalPm2 ? process.execPath : (process.platform === 'win32' ? 'pm2.cmd' : 'pm2')
+    const args = hasLocalPm2 ? [localPm2, action, './config/pm2/pm2.json'] : [action, './config/pm2/pm2.json']
+
+    const child = spawn(command, args, {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: 'ignore'
+    })
+
+    child.unref()
   }
 
   async init() {
@@ -92,7 +115,7 @@ export class Restart extends plugin {
 
     let npm = await this.checkPnpm()
     await redis.set(this.key, data, { EX: 120 })
-    if (await isPortTaken(restart_port || 27881)) {
+    if (await hasKsrRestartApi(restart_port || 27881)) {
       try {
         let result = await fetch(`http://localhost:${restart_port || 27881}/restart`)
         result = (await result.text()).trim()
@@ -108,17 +131,8 @@ export class Restart extends plugin {
     } else {
       try {
         if (process.argv[1].includes('pm2')) {
-          const localPm2 = `${process.cwd()}/node_modules/pm2/bin/pm2`
-          const command = fs.existsSync(localPm2) ? process.execPath : (process.platform === 'win32' ? 'pm2.cmd' : 'pm2')
-          const args = fs.existsSync(localPm2) ? [localPm2, 'restart', './config/pm2/pm2.json'] : ['restart', './config/pm2/pm2.json']
-
           logger.mark('检测到 PM2 运行环境，使用独立进程执行 PM2 重启')
-          const child = spawn(command, args, {
-            cwd: process.cwd(),
-            detached: true,
-            stdio: 'ignore'
-          })
-          child.unref()
+          this.runPm2Action('restart')
           return true
         }
 
@@ -167,7 +181,7 @@ export class Restart extends plugin {
       restart_port = YAML.parse(fs.readFileSync(`./config/config/bot.yaml`, `utf-8`))
       restart_port = restart_port.restart_port || 27881
     } catch { }
-    if (await isPortTaken(restart_port || 27881)) {
+    if (await hasKsrRestartApi(restart_port || 27881)) {
       try {
         logger.mark('关机成功，已停止运行')
         await this.e.reply(`关机成功，已停止运行`)
@@ -188,12 +202,7 @@ export class Restart extends plugin {
     logger.mark('关机成功，已停止运行')
     await this.e.reply('关机成功，已停止运行')
 
-    let npm = await this.checkPnpm()
-    exec(`${npm} stop`, { windowsHide: true }, (error, stdout, stderr) => {
-      if (error) {
-        this.e.reply(`操作失败！\n${error.stack}`)
-        logger.error(`关机失败\n${error.stack}`)
-      }
-    })
+    logger.mark('检测到 PM2 运行环境，使用独立进程执行 PM2 关机')
+    this.runPm2Action('stop')
   }
 }
