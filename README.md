@@ -4,7 +4,7 @@
   <img src="./resources/elia.png" width="30%" height="30%">
 </p>
 
-由Miao-Yunzai修改，轻量化版，增加和修改一些机制
+由Miao-Yunzai修改，主轻量化，优化性能/内存开销，增加和修改一些机制
 
 ### 简介
 开发该Yunzai的目的是本组织成员不便迁移到TRSS-Yunzai，又需要一个轻量化但可以正常使用的Miao-Yunzai，因此 **Elia-Yunzai** 诞生了
@@ -16,6 +16,7 @@
 3. 重写Redis启动逻辑
 4. 插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）
 5. 修改重启逻辑，防止重启时报错父子进程不协调的问题
+
 更多详见[CHANGELOG.md](./CHANGELOG.md)
 
 ### 增加的机制
@@ -26,6 +27,7 @@
 4. group.yaml可配置“群配置是否继承默认配置禁用或启用的功能”
 5. `#日志`增加了`#控制台日志`，使用`#控制台日志`将会把日志以终端的方式渲染为图片后发送，更方便阅读
 6. JS插件被修改（新增、修改、卸载）时，支持热重载（新增、重载、卸载）定时任务
+
 更多详见[CHANGELOG.md](./CHANGELOG.md)
 
 

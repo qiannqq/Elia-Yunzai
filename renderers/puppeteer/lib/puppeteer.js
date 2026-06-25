@@ -15,7 +15,7 @@ let mac = ""
 export default class Puppeteer extends Renderer {
   constructor(config) {
     super({
-      id: "puppeteer",
+      id: config.id || "puppeteer",
       type: "image",
       render: "screenshot",
     })
@@ -56,6 +56,12 @@ export default class Puppeteer extends Renderer {
       timeout: 120000,
       waitUntil: "networkidle2",
     }
+    /**
+     * redis 中缓存浏览器 WS 端点的 key 前缀。
+     * 缺省与原行为完全兼容；插件等多实例场景可传入独立前缀做命名空间隔离，
+     * 避免多实例互相覆盖、或与主渲染器抢占同一浏览器。
+     */
+    this.wsCacheKeyPrefix = config.wsCacheKeyPrefix || "Yz:chromium:browserWSEndpoint"
   }
 
   /**
@@ -70,11 +76,10 @@ export default class Puppeteer extends Renderer {
 
     let connectFlag = false
     try {
-      // 获取Mac地址
-      if (!mac) {
-        mac = await this.getMac()
-        this.browserMacKey = `Yz:chromium:browserWSEndpoint:${mac}`
-      }
+      // 获取Mac地址（mac 全局只取一次）
+      if (!mac) mac = await this.getMac()
+      // 每个实例按自身前缀生成 key，支持多实例并存，避免互相覆盖或与主渲染器冲突
+      if (!this.browserMacKey) this.browserMacKey = `${this.wsCacheKeyPrefix}:${mac}`
       // 是否有browser实例
       const browserUrl = (await redis.get(this.browserMacKey)) || this.config.wsEndpoint
       if (browserUrl) {
