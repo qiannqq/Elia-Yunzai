@@ -1,4 +1,28 @@
-# 3.1.4 Elia-Yunzai 更新
+# 3.1.5 Elia-Yunzai 更新
+
+## 优化
+
+* 优化重启机制，防外部后门使用ksr端口直接关掉Bot（不过还是防不住root捏）
+> 已验证本次修改不影响Guoba调用的重启
+
+> [!CAUTION] 警告
+> 更新到此版本将不能直接使用 curl 来重启 ksr 启动的Yunzai，只能使用 `#重启` 指令来重启Yunzai；若使用 pnpm 启动的Yunzai，请使用 `pnpm restart` / `#重启` 来重启Yunzai
+* 优化重启使用逻辑，防止重启时报错父子进程不协调的问题
+
+## 修复
+
+* 修复 PluginsLoad.changePlugin 传入的key永远不等于priority[].key的问题
+* 修复 miao-plugin 调用 render 时渲染异常问题
+
+## 新增
+
+* 支持 热重载定时任务
+
+## 其他
+
+* 保存日志的日志等级与设置保持一致
+
+# 3.1.4
 * 移除内置的genshin插件，移除对miao-plugin的依赖
 * 增加Stdin控制台输入指令
 * 重构Redis启动和错误处理逻辑
