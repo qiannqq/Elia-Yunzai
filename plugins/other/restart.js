@@ -7,7 +7,7 @@ import YAML from 'yaml'
 import common from '../../lib/common/common.js'
 
 const require = createRequire(import.meta.url)
-const { exec } = require('child_process')
+const { exec, spawn } = require('child_process')
 
 const isPortTaken = async (port) => {
   return new Promise((resolve) => {
@@ -95,7 +95,7 @@ export class Restart extends plugin {
     if (await isPortTaken(restart_port || 27881)) {
       try {
         let result = await fetch(`http://localhost:${restart_port || 27881}/restart`)
-        result = await result.text()
+        result = (await result.text()).trim()
         if (result !== `OK`) {
           redis.del(this.key)
           this.e.reply(`操作失败！`)
@@ -107,17 +107,29 @@ export class Restart extends plugin {
       }
     } else {
       try {
-        let cm = `${npm} start`
         if (process.argv[1].includes('pm2')) {
-          cm = `${npm} run restart`
+          const localPm2 = `${process.cwd()}/node_modules/pm2/bin/pm2`
+          const command = fs.existsSync(localPm2) ? process.execPath : (process.platform === 'win32' ? 'pm2.cmd' : 'pm2')
+          const args = fs.existsSync(localPm2) ? [localPm2, 'restart', './config/pm2/pm2.json'] : ['restart', './config/pm2/pm2.json']
+
+          logger.mark('检测到 PM2 运行环境，使用独立进程执行 PM2 重启')
+          const child = spawn(command, args, {
+            cwd: process.cwd(),
+            detached: true,
+            stdio: 'ignore'
+          })
+          child.unref()
+          return true
         }
+
+        let cm = `${npm} start`
 
         exec(cm, { windowsHide: true }, (error, stdout, stderr) => {
           if (error) {
             redis.del(this.key)
             this.e.reply(`操作失败！\n${error.stack}`)
             logger.error(`重启失败\n${error.stack}`)
-          } else if (stdout) {
+          } else {
             logger.mark('重启成功，运行已由前台转为后台')
             logger.mark(`查看日志请用命令：${npm} run log`)
             logger.mark(`停止后台运行命令：${npm} stop`)
