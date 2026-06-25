@@ -1,5 +1,6 @@
 import Renderer from "../../../lib/renderer/Renderer.js"
 import os from "node:os"
+import childProcess from "node:child_process"
 import lodash from "lodash"
 import puppeteer from "puppeteer"
 import timers from "node:timers/promises"
@@ -20,11 +21,19 @@ export default class Puppeteer extends Renderer {
     })
     this.browser = false
     this.lock = false
+    /** 正在主动关闭浏览器，用于抑制 disconnected 触发的重启 */
+    this.closing = false
     this.shoting = []
     /** 截图数达到时重启浏览器 避免生成速度越来越慢 */
-    this.restartNum = 100
+    this.restartNum = config.restartNum || 100
     /** 截图次数 */
     this.renderNum = 0
+    /** 空闲多久(ms)后自动关闭浏览器释放资源，0 为不关闭 */
+    this.idleTimeout = config.idleTimeout ?? cfg?.bot?.puppeteer_idle ?? 1800000
+    /** 空闲定时器 */
+    this.idleTimer = null
+    /** 关闭浏览器的超时时间(ms)，超时则强制结束进程 */
+    this.closeTimeout = config.closeTimeout || 8000
     this.config = {
       userDataDir: config.userDataDir || "data/puppeteer",
       headless: config.headless || "new",
@@ -69,15 +78,23 @@ export default class Puppeteer extends Renderer {
       // 是否有browser实例
       const browserUrl = (await redis.get(this.browserMacKey)) || this.config.wsEndpoint
       if (browserUrl) {
+        let conn
         try {
-          const browserWSEndpoint = await puppeteer.connect({ browserWSEndpoint: browserUrl })
-          // 如果有实例，直接使用
-          if (browserWSEndpoint) {
-            this.browser = browserWSEndpoint
-            connectFlag = true
-          }
+          conn = await puppeteer.connect({ browserWSEndpoint: browserUrl })
+          // 校验实例可用，避免连接到僵死的孤儿进程
+          await Promise.race([
+            conn.version(),
+            timers.setTimeout(5000).then(() => Promise.reject(new Error("连接验证超时"))),
+          ])
+          this.browser = conn
+          connectFlag = true
           logger.info(`puppeteer Chromium 连接成功 ${browserUrl}`)
         } catch (err) {
+          logger.warn(`puppeteer Chromium 复用实例不可用，丢弃缓存：${err.message || err}`)
+          // 断开无效连接，避免残留句柄
+          try {
+            await conn?.disconnect?.()
+          } catch {}
           await redis.del(this.browserMacKey)
         }
       }
@@ -107,6 +124,8 @@ export default class Puppeteer extends Renderer {
       logger.error("puppeteer Chromium 启动失败")
       return false
     }
+    /** 记录主进程 PID，关闭异常时用于强制结束进程树 */
+    this.browserPid = this.browser.process()?.pid
     if (!connectFlag) {
       logger.info(`puppeteer Chromium 启动成功 ${this.browser.wsEndpoint()}`)
       if (this.browserMacKey) {
@@ -117,9 +136,18 @@ export default class Puppeteer extends Renderer {
     }
 
     /** 监听Chromium实例是否断开 */
-    this.browser.on("disconnected", () => this.restart(true))
+    this.browser.on("disconnected", () => this.onDisconnected())
 
     return this.browser
+  }
+
+  /** 浏览器意外断开处理，主动关闭时不做任何动作 */
+  onDisconnected() {
+    if (this.closing) return
+    logger.warn("puppeteer Chromium 连接已断开，将在下次渲染时重新启动")
+    this.browser = false
+    this.lock = false
+    this.clearIdleTimer()
   }
 
   // 获取Mac地址
@@ -161,6 +189,8 @@ export default class Puppeteer extends Renderer {
    * @return img 不做segment包裹
    */
   async screenshot(name, data = {}) {
+    /** 进入渲染先停掉空闲定时器，避免渲染途中被关闭 */
+    this.clearIdleTimer()
     if (!(await this.browserInit())) return false
     const pageHeight = data.multiPageHeight || 4000
 
@@ -186,8 +216,9 @@ export default class Puppeteer extends Renderer {
       }, puppeteerTimeout)
     }
 
+    let page
     try {
-      const page = await this.browser.newPage()
+      page = await this.browser.newPage()
       const pageGotoParams = lodash.extend(this.pageGotoParams, data.pageGotoParams || {})
       await page.goto(`file://${_path}${lodash.trim(savePath, ".")}`, pageGotoParams)
       const body = (await page.$("#container")) || (await page.$("body"))
@@ -257,7 +288,6 @@ export default class Puppeteer extends Renderer {
           logger.mark(`[图片生成][${name}] 处理完成`)
         }
       }
-      page.close().catch(err => logger.error(err))
     } catch (err) {
       logger.error(`[图片生成][${name}] 图片生成失败`, err)
       /** 关闭浏览器 */
@@ -266,6 +296,8 @@ export default class Puppeteer extends Renderer {
       ret = []
       return false
     } finally {
+      /** 无论成功失败都关闭页面，避免页面句柄泄漏 */
+      if (page) page.close().catch(err => logger.error(err))
       if (overtime) clearTimeout(overtime)
     }
 
@@ -277,6 +309,8 @@ export default class Puppeteer extends Renderer {
     }
 
     this.restart()
+    /** 渲染完成后启动空闲定时器 */
+    this.resetIdleTimer()
     return data.multiPage ? ret : ret[0]
   }
 
@@ -286,16 +320,85 @@ export default class Puppeteer extends Renderer {
     if (!this.browser?.close || this.lock) return
     if (!force) if (this.renderNum % this.restartNum !== 0 || this.shoting.length > 0) return
     logger.info(`puppeteer Chromium ${force ? "强制" : ""}关闭重启...`)
-    this.stop(this.browser)
+    const browser = this.browser
     this.browser = false
+    this.closing = true
+    /** 关闭旧实例（带超时强杀），不阻塞新实例启动 */
+    this.stop(browser).finally(() => {
+      this.closing = false
+    })
     return this.browserInit()
   }
 
-  async stop(browser) {
+  /** 空闲定时器：长时间无渲染时关闭浏览器释放资源 */
+  resetIdleTimer() {
+    this.clearIdleTimer()
+    if (!(this.idleTimeout > 0)) return
+    this.idleTimer = setTimeout(() => {
+      if (this.shoting.length > 0 || !this.browser) return
+      logger.info(`puppeteer Chromium 空闲超过 ${this.idleTimeout / 1000}s，自动关闭释放资源`)
+      this.closeBrowser()
+    }, this.idleTimeout)
+    /** 不阻止进程退出 */
+    this.idleTimer.unref?.()
+  }
+
+  clearIdleTimer() {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer)
+      this.idleTimer = null
+    }
+  }
+
+  /** 主动关闭浏览器且不重启，下次渲染时按需重新启动 */
+  async closeBrowser() {
+    if (!this.browser) return
+    this.clearIdleTimer()
+    const browser = this.browser
+    const pid = this.browserPid
+    this.browser = false
+    this.closing = true
     try {
-      await browser.close()
+      await this.stop(browser, pid)
+      // 已主动销毁，清掉缓存的 WS 端点，避免下次连到死实例
+      if (this.browserMacKey) await redis.del(this.browserMacKey).catch(() => {})
+    } finally {
+      this.closing = false
+    }
+  }
+
+  /**
+   * 关闭浏览器实例，close 超时则按 PID 强制结束进程树，杜绝孤儿/僵尸进程
+   * @param browser 浏览器实例
+   * @param pid 浏览器主进程 PID，缺省时取 browser.process()
+   */
+  async stop(browser, pid) {
+    if (!browser) return
+    pid = pid ?? browser.process()?.pid
+    try {
+      await Promise.race([
+        browser.close(),
+        timers.setTimeout(this.closeTimeout).then(() => Promise.reject(new Error("close 超时"))),
+      ])
     } catch (err) {
-      logger.error("puppeteer Chromium 关闭错误", err)
+      logger.error(`puppeteer Chromium 正常关闭失败，尝试强制结束进程(${pid})`, err)
+      this.killProcess(pid)
+    }
+  }
+
+  /** 按 PID 强杀进程树（含子渲染进程） */
+  killProcess(pid) {
+    if (!pid) return
+    try {
+      if (process.platform === "win32") {
+        childProcess.execSync(`taskkill /pid ${pid} /T /F`, { stdio: "ignore" })
+      } else {
+        process.kill(pid, "SIGKILL")
+      }
+      logger.mark(`puppeteer Chromium 进程 ${pid} 已强制结束`)
+    } catch (err) {
+      // 进程可能已退出，忽略
+      logger.debug(`puppeteer Chromium 进程 ${pid} 结束失败（可能已退出）：${err.message || err}`)
     }
   }
 }

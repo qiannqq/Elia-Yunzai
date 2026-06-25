@@ -19,6 +19,8 @@ chromium_path:
 puppeteer_ws:
 # puppeteer截图超时时间
 puppeteer_timeout:
+# puppeteer空闲多久(毫秒)后自动关闭浏览器释放资源，0为不关闭，默认1800000(30分钟)
+puppeteer_idle:
 
 # 米游社接口代理地址，国际服用
 proxyAddress:

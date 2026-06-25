@@ -22,6 +22,15 @@ args:
 # puppeteer截图超时时间
 puppeteerTimeout:
 
+# 空闲多久(毫秒)后自动关闭浏览器释放资源，下次渲染按需重启。0 为不关闭。默认 1800000(30分钟)
+idleTimeout: 1800000
+
+# 关闭浏览器的超时时间(毫秒)，超时则按 PID 强制结束进程树，避免孤儿/僵尸进程。默认 8000
+closeTimeout: 8000
+
+# 累计截图多少次后自动重启浏览器，避免渲染越来越慢。默认 100
+restartNum: 100
+
 # 页面goto时的参数
 pageGotoParams:
   timeout: 120000
