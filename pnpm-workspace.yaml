@@ -1,3 +1,6 @@
 packages:
   - 'plugins/**'
   - 'renderers/**'
+allowBuilds:
+  puppeteer: true
+  sqlite3: true
