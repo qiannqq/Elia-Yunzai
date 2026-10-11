@@ -22,6 +22,7 @@
 ## 新增
 
 * 支持 热重载定时任务
+* 接入 shotium 渲染后端（裁掉 V8 的 Chromium，在进程内完成布局与光栅化），`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板交给 puppeteer，其余优先走 shotium，渲染失败会自动退回下一个后端
 
 ## 其他
 

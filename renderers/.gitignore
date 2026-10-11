@@ -4,3 +4,7 @@
 !puppeteer
 !puppeteer/**
 puppeteer/config.yaml
+
+!shotium
+!shotium/**
+shotium/config.yaml

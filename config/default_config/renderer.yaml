@@ -1,2 +1,6 @@
-# 渲染后端, 默认为 puppeteer
+# 渲染后端
+#
+# 留空时按模板内容自动选择：含 <script> 的模板交给支持脚本的渲染器（puppeteer），
+# 其余模板优先走轻量的 shotium；选中的渲染器渲染失败会自动退回下一个
+# 也可以直接指定：puppeteer / shotium
 name:
