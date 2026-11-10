@@ -1,0 +1,13 @@
+# 插件 HTTP 服务
+# 只有插件登记了路由（ctx.route / ctx.static / ctx.websocket）时才会启动
+enable: false
+
+# 监听地址，默认只对本机开放
+host: 127.0.0.1
+
+# 监听端口
+port: 2536
+
+# 访问令牌，留空表示不校验
+# 监听非回环地址时必须设置，否则内核拒绝启动
+token: ""
