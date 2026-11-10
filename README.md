@@ -10,8 +10,9 @@
 开发该Yunzai的目的是本组织成员不便迁移到TRSS-Yunzai，又需要一个轻量化但可以正常使用的Miao-Yunzai，因此 **Elia-Yunzai** 诞生了
 
 ### 修改的机制
-1. 已移除对miao-plugin的依赖，并删除了genshin
-* 虽然是移除了对miao-plugin的依赖，但部分插件可能需要用到miao-plugin，因此建议安装miao-plugin
+1. 内核与插件解耦：lib 不再 import 任何插件，也不写死插件目录
+* miao-plugin、genshin 都成为可选插件：装了就由 `plugins/genshin-compat` 把米游社相关能力接回来，不装也不影响启动
+* 内核边界可由 `pnpm run check:kernel` 检查，`pnpm run test:kernel` 覆盖不依赖第三方模块的部分
 2. 默认跳过登录ICQQ，需要可以在配置文件中打开
 3. 重写Redis启动逻辑
 4. 插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）
@@ -49,3 +50,19 @@ git pull
 ```bash
 git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugins/genshin
 ```
+
+### 安装miao-plugin（如果需要）
+按 miao-plugin 官方仓库的说明 clone 到 `./plugins/miao-plugin` 即可。内核不依赖它，装了之后由 `plugins/genshin-compat` 自动接回渲染布局与消息前缀。
+
+### 内核扩展点
+内核只提供通用能力，插件相关的部分通过下面的入口注册，内核本身不需要认识具体插件：
+
+| 入口 | 用途 |
+| --- | --- |
+| `Runtime.provide(name, factory, key)` | 注册 lazily 求值的服务，插件里用 `e.runtime.<name>` 访问 |
+| `Runtime.onInit(fn, key)` | 每条消息在 `Runtime.init` 时执行，适合补充 `e.user` 之类的实例字段 |
+| `Runtime.renderData(fn, key)` | 追加渲染数据，合并顺序为 内核默认 → 提供者 → 调用方 data → 内核终值 |
+| `Loader.useMsgPreprocessor(fn, { key, priority })` | 在事件过滤之后、命令匹配之前加工 `e`（命令标准化、补充字段等） |
+| `Handler.add()` / `plugin` 基类 | 命令、上下文、handler 等常规扩展 |
+
+`plugins/genshin-compat` 就是这套入口的一个完整例子：消息前缀、渲染布局、米游社 model 全部由它注册，且只在检测到对应插件时才生效。
