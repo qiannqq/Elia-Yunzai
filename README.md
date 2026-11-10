@@ -11,8 +11,8 @@
 
 ### 修改的机制
 1. 内核与插件解耦：lib 不再 import 任何插件，也不写死插件目录
-* miao-plugin、genshin 都成为可选插件：装了就由 `plugins/genshin-compat` 把米游社相关能力接回来，不装也不影响启动
-* 内核边界可由 `pnpm run check:kernel` 检查，`pnpm run test:kernel` 覆盖不依赖第三方模块的部分
+* miao-plugin、genshin 均为可选插件；安装后由 `plugins/genshin-compat` 提供米游社相关能力
+* 内核边界由 `pnpm run check:kernel` 检查，`pnpm run test:kernel` 覆盖不依赖第三方模块的部分
 2. 默认跳过登录ICQQ，需要可以在配置文件中打开
 3. 重写Redis启动逻辑
 4. 插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）
@@ -52,17 +52,74 @@ git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugi
 ```
 
 ### 安装miao-plugin（如果需要）
-按 miao-plugin 官方仓库的说明 clone 到 `./plugins/miao-plugin` 即可。内核不依赖它，装了之后由 `plugins/genshin-compat` 自动接回渲染布局与消息前缀。
+按 miao-plugin 官方仓库的说明 clone 到 `./plugins/miao-plugin`。内核不依赖该插件，安装后由 `plugins/genshin-compat` 提供渲染布局与消息前缀。
 
 ### 内核扩展点
-内核只提供通用能力，插件相关的部分通过下面的入口注册，内核本身不需要认识具体插件：
+内核只提供通用能力，插件相关部分经以下入口注册：
 
 | 入口 | 用途 |
 | --- | --- |
-| `Runtime.provide(name, factory, key)` | 注册 lazily 求值的服务，插件里用 `e.runtime.<name>` 访问 |
-| `Runtime.onInit(fn, key)` | 每条消息在 `Runtime.init` 时执行，适合补充 `e.user` 之类的实例字段 |
+| `Runtime.provide(name, factory, key)` | 注册 lazily 求值的服务，插件中以 `e.runtime.<name>` 访问 |
+| `Runtime.onInit(fn, key)` | 每条消息在 `Runtime.init` 中执行，用于补充 `e.user` 等实例字段 |
 | `Runtime.renderData(fn, key)` | 追加渲染数据，合并顺序为 内核默认 → 提供者 → 调用方 data → 内核终值 |
-| `Loader.useMsgPreprocessor(fn, { key, priority })` | 在事件过滤之后、命令匹配之前加工 `e`（命令标准化、补充字段等） |
-| `Handler.add()` / `plugin` 基类 | 命令、上下文、handler 等常规扩展 |
+| `Loader.useMsgPreprocessor(fn, { key, priority })` | 在事件过滤之后、命令匹配之前加工 `e` |
+| `Handler.add()` / `plugin` 基类 | 命令、上下文与 handler 扩展 |
 
-`plugins/genshin-compat` 就是这套入口的一个完整例子：消息前缀、渲染布局、米游社 model 全部由它注册，且只在检测到对应插件时才生效。
+`plugins/genshin-compat` 使用上述入口注册消息前缀、渲染布局与米游社 model，仅在检测到对应插件时生效。
+
+### 跨内核插件（同时兼容 Yunzai-NG）
+
+插件可写成 `{ name, setup }` 对象，无需引入框架包：
+
+```js
+export default {
+  name: "my-plugin",
+  version: "1.0.0",
+  setup(ctx) {
+    ctx.every("60s", () => ctx.logger.mark("tick"))
+    return () => ctx.logger.mark("unloaded")
+  },
+}
+```
+
+目录入口与类插件写法照旧加载。`ctx` 与 NG 同名同义：`every` / `cron` / `on` / `middleware` / `route` / `static` / `websocket` / `provide` / `inject` / `require` / `waitFor` / `cache` / `onDispose` / `resource` / `adopt`。
+
+定时任务经 `ctx.every` / `ctx.cron` 登记；自建句柄交给 `ctx.onDispose`，或使用 `ctx.adopt(timer)`：
+
+```js
+setup(ctx) {
+  const timer = setInterval(poll, 30_000)
+  timer.unref?.()
+  ctx.onDispose(() => clearInterval(timer))
+}
+```
+
+未改写的插件可使用全局登记函数：
+
+| 函数 | 用途 |
+| --- | --- |
+| `registerDispose(fn, label)` | 登记清理函数，卸载时逆序执行；返回幂等的取消函数 |
+| `ownTimer(timer, label)` | 登记定时器或间隔器的清除 |
+| `onPluginUnload(fn, label)` | `registerDispose` 的别名 |
+
+归属由加载器在 import、`init`、命令回调与定时任务中记录；无归属时仅告警。
+
+未登记的定时器、事件监听与 `net.Server` 在卸载时按归属兜底清扫，日志格式：
+
+```
+[插件回收] miao-plugin：登记项 3，事件 1，服务 12，兜底自建项 定时器 2 / 监听 4 / 连接 0
+```
+
+`process.stdin` / `stdout` / `stderr` 上的监听不参与记账与摘除。
+
+卸载顺序：
+
+1. `abort.abort()`
+2. `scope.dispose()`：逆序执行 disposer
+3. 按 owner 清扫事件、服务、消息预处理器、中间件、路由与定时任务
+4. 兜底清扫未登记的定时器、监听与套接字
+5. 摘除命令 handler
+
+`config/default_config/web.yaml` 默认 `enable: false`；开启后监听非回环地址须设置 `token`，否则拒绝启动。
+
+`pnpm run test:compat` 覆盖上述链路。

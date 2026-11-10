@@ -30,11 +30,13 @@
 
 ## 重构
 
-* 内核不再认识具体插件：`lib/plugins/runtime.js` 移除对 miao-plugin、genshin 的 import 与写死路径，改为 `Runtime.provide` / `onInit` / `renderData` 三个扩展点
-* `lib/plugins/loader.js` 移除星铁 / 绝区零命令前缀与 `isSr` / `isGs`，改为 `useMsgPreprocessor` 注册的消息预处理器
-* 新增 `plugins/genshin-compat`：检测到 miao-plugin / genshin 时把米游社相关能力接回内核，未安装则自动跳过
-* 新增 `pnpm run check:kernel`（内核边界检查）与 `pnpm run test:kernel`（内核自测）
-* `plugins/other/update.js` 的 `#更新` 不再附带更新 miao-plugin
+* `lib/plugins/runtime.js` 移除对 miao-plugin、genshin 的 import 与写死路径，改用 `Runtime.provide` / `onInit` / `renderData` 扩展点
+* `lib/plugins/loader.js` 移除星铁 / 绝区零命令前缀与 `isSr` / `isGs`，改用 `useMsgPreprocessor`
+* 新增 `plugins/genshin-compat`，承接米游社相关能力
+* 新增插件作用域与按归属回收，提供 `DisposalScope` 与 `registerDispose` / `ownTimer` 全局登记函数
+* 新增插件上下文 `ctx`、定时任务调度器、路由与静态资源服务，兼容 Yunzai-NG 插件写法
+* 新增 `pnpm run check:kernel`、`pnpm run test:kernel` 与 `pnpm run test:compat`
+* `#更新` 不再附带更新 miao-plugin
 
 # 3.1.4
 * 移除内置的genshin插件，移除对miao-plugin的依赖
