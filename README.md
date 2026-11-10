@@ -13,7 +13,7 @@
 1. 内核与插件解耦：lib 不再 import 任何插件，也不写死插件目录
 * miao-plugin、genshin 均为可选插件；安装后由 `plugins/genshin-compat` 提供米游社相关能力
 * 内核边界由 `pnpm run check:kernel` 检查，`pnpm run test:kernel` 覆盖不依赖第三方模块的部分
-2. 默认跳过登录ICQQ，需要可以在配置文件中打开
+2. 登录与收发由适配器插件负责，内核不依赖具体协议库；默认跳过登录，需要可以在配置文件中打开
 3. 重写Redis启动逻辑
 4. 插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）
 5. 修改重启逻辑，防止重启时报错父子进程不协调的问题
@@ -28,7 +28,7 @@
 4. group.yaml可配置“群配置是否继承默认配置禁用或启用的功能”
 5. `#日志`增加了`#控制台日志`，使用`#控制台日志`将会把日志以终端的方式渲染为图片后发送，更方便阅读
 6. JS插件被修改（新增、修改、卸载）时，支持热重载（新增、重载、卸载）定时任务
-7. 渲染后端可插拔，`renderers/` 下每个后端是一个独立包；`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板先试支持脚本的后端，其余优先走进程内的 shotium
+7. 渲染后端与适配器均可插拔：`renderers/` 下是独立包，适配器随插件分发；`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板先试支持脚本的后端，其余优先走进程内的 shotium
 
 更多详见[CHANGELOG.md](./CHANGELOG.md)
 
@@ -39,6 +39,13 @@ git clone --depth=1 https://gitee.com/Orbiter_StellarTrek/Elia-Yunzai.git
 cd Elia-Yunzai
 pnpm i
 ```
+### 配置
+默认配置内置于 `lib/config/defaults.js`。首次启动会生成 `config/default_config/`、`config/config/`，以及 `plugins/`、`renderers/`、`data/`、`resources/`、`temp/` 目录；`config/` 可整体删除，启动时重建。
+
+登录相关配置（账号、密码、签名 API、滑块地址、是否登录）位于 `plugins/icqq-adapter/config/config.yaml`，首次启动会从旧的 `qq.yaml` 与 `bot.yaml` 迁移。
+
+Redis 不可用时自动降级为内存实现，数据不落盘。
+
 ### 由Miao-Yunzai迁移（换源）至Elia-Yunzai
 ```bash
 git reset --hard 9fa4496d25e53622b2701b25a061e05f9c93d863
@@ -75,6 +82,16 @@ git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugi
 - 安装：`renderers/puppeteer`、`renderers/shotium` 各自带 `package.json`，按目录内 README 安装；一个都没有时发送图片会提示「没有可用的渲染后端」。
 - 插件自带后端：`ctx.renderer(provider)`，插件卸载时自动摘除。
 - `lib/puppeteer/puppeteer.js` 与 `#yunzai` 的 `puppeteer` 导出仍可用。
+
+### 适配器
+
+登录与收发由适配器负责，内核只认 `Bot` 的形状。适配器随插件分发：插件目录下放一个 `adapter.js`，启动前由加载器 preload。
+
+- 声明：`adapter.js` 内 `export default { id, prepare?, create(botConfig, ctx), login?(bot, ctx), segment? }`，也可用 `defineAdapter(definition, owner)` 注册。
+- 契约：`create` 返回的 Bot 需带 `uin` 并能接收 `on(event, handler)`；`login` 返回 `false` 表示本次不登录、只加载插件。
+- 启用：`config/config/bot.yaml` 的 `adapter`，留空时使用唯一已注册的适配器。
+- 插件自带适配器：`ctx.adapter(provider)` 或全局 `defineAdapter`，插件卸载时自动摘除。
+- 没有可用适配器时不中断启动：内核提供一个完整的占位 Bot（含 `emit` 等常用方法），插件照常加载，只在日志里提示。
 
 ### 跨内核插件（同时兼容 Yunzai-NG）
 

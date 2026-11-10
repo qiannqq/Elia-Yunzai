@@ -38,6 +38,11 @@
 * 新增 `pnpm run check:kernel`、`pnpm run test:kernel` 与 `pnpm run test:compat`
 * 渲染后端改为 `renderers/` 下的独立包，内核只保留渲染入口、注册表与加载契约；`puppeteer` 依赖归属 `renderers/puppeteer`，插件可用 `ctx.renderer()` 自带后端
 * `#更新` 不再附带更新 miao-plugin
+* 登录与收发改为适配器，内核只保留适配器契约与启动流程；`plugins/icqq-adapter` 承接账号配置、扫码与滑动验证
+* 适配器随插件分发，插件目录下的 `adapter.js` 在启动前注册；插件也可用 `ctx.adapter()` 或 `defineAdapter()` 注册
+* 默认配置内置于内核，缺失 `config/`、`plugins/`、`renderers/` 等目录时自动创建，只有 `lib/` 也能启动
+* 登录相关配置（账号、签名 API、滑块地址、是否登录）迁到 `plugins/icqq-adapter/config/config.yaml`，首次启动自动迁移旧配置
+* 没有可用适配器时使用占位 Bot，插件照常加载；Redis 不可用时降级为内存实现
 
 # 3.1.4
 * 移除内置的genshin插件，移除对miao-plugin的依赖
