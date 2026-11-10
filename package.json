@@ -18,7 +18,8 @@
     "ksr": "node ./lib/tools/ksr.js",
     "lint": "git ls-files '*.js'|xargs prettier --write --list-different",
     "check:kernel": "node ./lib/tools/kernel-purity.js",
-    "test:kernel": "node ./lib/tools/kernel-selftest.js"
+    "test:kernel": "node ./lib/tools/kernel-selftest.js",
+    "test:compat": "node ./lib/tools/compat-selftest.js"
   },
   "dependencies": {
     "art-template": "4.13.2",
