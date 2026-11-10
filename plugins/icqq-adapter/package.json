@@ -1,0 +1,25 @@
+{
+  "name": "elia-plugin-icqq-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "icqq 适配器插件：QQ 账号登录与消息段",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "icqq": "^0.6.10",
+    "inquirer": "^12.6.3",
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.18.2"
+  },
+  "files": [
+    "index.js",
+    "adapter.js",
+    "login.js",
+    "qq.js",
+    "README.md"
+  ]
+}

@@ -8,6 +8,9 @@ genshin/config/*
 !genshin-compat
 !genshin-compat/**
 
+!icqq-adapter
+!icqq-adapter/**
+
 !system
 !system/**
 

@@ -21,15 +21,11 @@ online_msg: true
 # 上线推送通知的冷却时间
 online_msg_exp: 86400
 
-# 是否跳过登录ICQQ
-skip_login: true
+# 适配器 id，留空时使用唯一已注册的适配器
+adapter: ""
 
 # 是否启用串行加载插件
 serial_load: false
 
-# 签名API地址(如:http://127.0.0.1:8080/sign?key=114514)
-sign_api_addr:
-# 传入的QQ版本(如:8.9.63、8.9.68)
+# 传入的QQ版本(如:8.9.63、8.9.68)，由适配器解释
 ver:
-# 滑动验证自动获取ticket API地址
-slider_ticket_addr: https://HanXuan-GT.HF.Space/captcha/slider
