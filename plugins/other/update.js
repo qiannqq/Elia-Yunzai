@@ -34,7 +34,7 @@ export class update extends plugin {
       ],
     })
 
-    this.typeName = "Miao-Yunzai"
+    this.typeName = "Elia-Yunzai"
     this.messages = []
   }
 
@@ -49,14 +49,7 @@ export class update extends plugin {
     if (plugin === false) return false
 
     /** 执行更新 */
-    if (plugin === "") {
-      await this.runUpdate("")
-      await common.sleep(1000)
-      plugin = this.getPlugin("miao-plugin")
-      await this.runUpdate(plugin)
-    } else {
-      await this.runUpdate(plugin)
-    }
+    await this.runUpdate(plugin)
 
     /** 是否需要重启 */
     if (this.isUp) {
