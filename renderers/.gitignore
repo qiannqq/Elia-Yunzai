@@ -4,7 +4,11 @@
 !puppeteer
 !puppeteer/**
 puppeteer/config.yaml
+puppeteer/node_modules
+puppeteer/package-lock.json
+puppeteer/pnpm-lock.yaml
 
 !shotium
 !shotium/**
 shotium/config.yaml
+shotium/node_modules

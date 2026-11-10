@@ -1,24 +1,34 @@
-import Renderer from "../../../lib/renderer/Renderer.js"
 import os from "node:os"
 import childProcess from "node:child_process"
 import lodash from "lodash"
 import puppeteer from "puppeteer"
 import timers from "node:timers/promises"
 import fs from "node:fs/promises"
-// 暂时保留对原config的兼容
-import cfg from "../../../lib/config/config.js"
+
+/** 基类与配置优先取 host，未提供时回落到仓库内模块 */
+const Base = globalThis.Renderer ?? (await import("../../../lib/renderer/Renderer.js")).default
+
+const legacyCfg = await (async () => {
+  try {
+    return (await import("../../../lib/config/config.js")).default
+  } catch {
+    return {}
+  }
+})()
 
 const _path = process.cwd()
 // mac地址
 let mac = ""
 
-export default class Puppeteer extends Renderer {
-  constructor(config) {
+export default class Puppeteer extends Base {
+  constructor(config, host = {}) {
     super({
       id: config.id || "puppeteer",
       type: "image",
       render: "screenshot",
     })
+    /** 内核配置：host 优先，老内核回落到直接 import 的那份 */
+    const kernelCfg = host.cfg ?? legacyCfg
     this.browser = false
     this.lock = false
     /** 正在主动关闭浏览器，用于抑制 disconnected 触发的重启 */
@@ -29,7 +39,7 @@ export default class Puppeteer extends Renderer {
     /** 截图次数 */
     this.renderNum = 0
     /** 空闲多久(ms)后自动关闭浏览器释放资源，0 为不关闭 */
-    this.idleTimeout = config.idleTimeout ?? cfg?.bot?.puppeteer_idle ?? 1800000
+    this.idleTimeout = config.idleTimeout ?? kernelCfg?.bot?.puppeteer_idle ?? 1800000
     /** 空闲定时器 */
     this.idleTimer = null
     /** 关闭浏览器的超时时间(ms)，超时则强制结束进程 */
@@ -44,14 +54,14 @@ export default class Puppeteer extends Renderer {
         "--no-zygote",
       ],
     }
-    if (config.chromiumPath || cfg?.bot?.chromium_path)
+    if (config.chromiumPath || kernelCfg?.bot?.chromium_path)
       /** chromium其他路径 */
-      this.config.executablePath = config.chromiumPath || cfg?.bot?.chromium_path
-    if (config.puppeteerWS || cfg?.bot?.puppeteer_ws)
+      this.config.executablePath = config.chromiumPath || kernelCfg?.bot?.chromium_path
+    if (config.puppeteerWS || kernelCfg?.bot?.puppeteer_ws)
       /** chromium其他路径 */
-      this.config.wsEndpoint = config.puppeteerWS || cfg?.bot?.puppeteer_ws
+      this.config.wsEndpoint = config.puppeteerWS || kernelCfg?.bot?.puppeteer_ws
     /** puppeteer超时超时时间 */
-    this.puppeteerTimeout = config.puppeteerTimeout || cfg?.bot?.puppeteer_timeout || 0
+    this.puppeteerTimeout = config.puppeteerTimeout || kernelCfg?.bot?.puppeteer_timeout || 0
     this.pageGotoParams = config.pageGotoParams || {
       timeout: 120000,
       waitUntil: "networkidle2",

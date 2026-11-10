@@ -1,0 +1,21 @@
+{
+  "name": "elia-renderer-puppeteer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Elia-Yunzai / Miao-Yunzai 的 puppeteer 渲染后端",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "puppeteer": "*"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "config_default.yaml",
+    "README.md"
+  ]
+}
