@@ -28,7 +28,7 @@
 4. group.yaml可配置“群配置是否继承默认配置禁用或启用的功能”
 5. `#日志`增加了`#控制台日志`，使用`#控制台日志`将会把日志以终端的方式渲染为图片后发送，更方便阅读
 6. JS插件被修改（新增、修改、卸载）时，支持热重载（新增、重载、卸载）定时任务
-7. 渲染后端可插拔，`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板交给 puppeteer，其余优先走进程内的 shotium
+7. 渲染后端可插拔，`renderers/` 下每个后端是一个独立包；`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板先试支持脚本的后端，其余优先走进程内的 shotium
 
 更多详见[CHANGELOG.md](./CHANGELOG.md)
 
@@ -67,6 +67,15 @@ git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugi
 
 `plugins/genshin-compat` 使用上述入口注册消息前缀、渲染布局与米游社 model，仅在检测到对应插件时生效。
 
+### 渲染后端
+
+渲染后端是 `renderers/` 下的独立包，内核只负责发现、排序与调度。
+
+- 契约：`index.js` 导出 `(config, host) => ({ id, type, render(name, data), support_script? })`，`host` 为 `{ Renderer, cfg, logger }`。缺少 `id`、`type` 不受支持或 `render` 不是函数的后端不会注册。
+- 安装：`renderers/puppeteer`、`renderers/shotium` 各自带 `package.json`，按目录内 README 安装；一个都没有时发送图片会提示「没有可用的渲染后端」。
+- 插件自带后端：`ctx.renderer(provider)`，插件卸载时自动摘除。
+- `lib/puppeteer/puppeteer.js` 与 `#yunzai` 的 `puppeteer` 导出仍可用。
+
 ### 跨内核插件（同时兼容 Yunzai-NG）
 
 插件可写成 `{ name, setup }` 对象，无需引入框架包：
@@ -94,7 +103,15 @@ setup(ctx) {
 }
 ```
 
-未改写的插件可使用全局登记函数：
+#### 最小化改动
+
+旧插件无需改写为 `ctx` 形式，加一行登记即可：
+
+```js
+const timer = setInterval(poll, 30_000)
+timer.unref?.()
+registerDispose(() => clearInterval(timer), "轮询")
+```
 
 | 函数 | 用途 |
 | --- | --- |

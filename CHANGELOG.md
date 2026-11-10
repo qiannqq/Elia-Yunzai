@@ -22,7 +22,7 @@
 ## 新增
 
 * 支持 热重载定时任务
-* 接入 shotium 渲染后端（裁掉 V8 的 Chromium，在进程内完成布局与光栅化），`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板交给 puppeteer，其余优先走 shotium，渲染失败会自动退回下一个后端
+* 接入 shotium 渲染后端（裁掉 V8 的 Chromium，在进程内完成布局与光栅化），`renderer.yaml` 的 `name` 留空时按模板自动分流：含 `<script>` 的模板先试支持脚本的后端，其余优先走 shotium，渲染失败会自动退回下一个后端
 
 ## 其他
 
@@ -36,6 +36,7 @@
 * 新增插件作用域与按归属回收，提供 `DisposalScope` 与 `registerDispose` / `ownTimer` 全局登记函数
 * 新增插件上下文 `ctx`、定时任务调度器、路由与静态资源服务，兼容 Yunzai-NG 插件写法
 * 新增 `pnpm run check:kernel`、`pnpm run test:kernel` 与 `pnpm run test:compat`
+* 渲染后端改为 `renderers/` 下的独立包，内核只保留渲染入口、注册表与加载契约；`puppeteer` 依赖归属 `renderers/puppeteer`，插件可用 `ctx.renderer()` 自带后端
 * `#更新` 不再附带更新 miao-plugin
 
 # 3.1.4
