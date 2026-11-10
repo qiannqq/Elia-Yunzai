@@ -11,7 +11,11 @@ const srReg = /^#?(\*|星铁|星轨|穹轨|星穹|崩铁|星穹铁道|崩坏星�
 /** 绝区零命令前缀 */
 const zzzReg = /^#?(%|％|绝区零|绝区)+/
 
-export function installMsgPrefix() {
+/** 登记归 this 插件所有，卸载时按 owner 摘除 */
+const OWNER = "genshin-compat"
+const KEY = "genshin-compat:game-prefix"
+
+export function installMsgPrefix(ctx) {
   loader.useMsgPreprocessor(
     e => {
       // e.isSr = true，且命令标准化为 #星铁 开头
@@ -32,6 +36,7 @@ export function installMsgPrefix() {
         e.msg = e.msg.replace(zzzReg, "#绝区零")
       }
     },
-    { key: "genshin-compat:game-prefix", priority: 100 },
+    { key: KEY, priority: 100, owner: OWNER },
   )
+  ctx?.onDispose(() => loader.offMsgPreprocessor(KEY))
 }

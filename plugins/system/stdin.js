@@ -58,11 +58,22 @@ function pickUser(uid) {
 }
 
 if(!Bot.adapter || !Array.isArray(Bot.adapter)) Bot.adapter = []
-Bot.adapter.push('stdin')
+/** 热重载时这个文件会再跑一遍，别把适配器名重复塞进去 */
+if (!Bot.adapter.includes('stdin')) Bot.adapter.push('stdin')
 
 /** 监听控制台输入 */
 const rl = createInterface({ input: process.stdin, output: process.stdout })
+/** rl.close() 会把输入流暂停掉，重载后新实例读的是同一条 stdin，不 resume 就再也收不到按键 */
+process.stdin.resume()
 rl.on('SIGINT', () => { rl.close(); process.exit() })
+/**
+ * 登记要在模块顶层做：这里才有插件归属，卸载时内核才知道该关谁
+ * 关掉 rl 之后顺手退出 raw 模式，否则重载失败时终端会一直吞掉 Ctrl+C。
+ */
+registerDispose(() => { //
+    rl.close()
+    if (typeof process.stdin.setRawMode === 'function') process.stdin.setRawMode(false)
+}, "标准输入")
 function getInput() {
     rl.question('', async (input) => {
         logger.info(`${chalk.hex("#868ECC")(`[标准输入]`)} 收到消息：${input}`)
@@ -189,3 +200,4 @@ async function sendMsg(msg) {
 logger.mark(`${chalk.hex("#868ECC")(`[标准输入]`)} Elia-Yunzai 标准输入已加载，可在控制台输入指令`)
 
 Bot.emit('system.online', { post_type: 'system', notice_type: 'online', self_id: 'stdin' })
+

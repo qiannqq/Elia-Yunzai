@@ -12,8 +12,11 @@ const MIAO_RES = "plugins/miao-plugin/resources/"
 /** 随包自带的副本 */
 const BUNDLED_RES = "plugins/genshin-compat/resources/miao-common/"
 
-export function installRenderData() {
-  Runtime.renderData(
+const OWNER = "genshin-compat"
+const KEY = "genshin-compat:miao-render"
+
+export function installRenderData(ctx) {
+  const dispose = Runtime.renderData(
     ({ segments = [] }) => {
       const res = fs.existsSync("./plugins/miao-plugin") ? MIAO_RES : BUNDLED_RES
       const resPath = `../../../${"../".repeat(segments.length)}${res}`
@@ -26,6 +29,8 @@ export function installRenderData() {
         elemLayout: layoutPath + "elem.html",
       }
     },
-    "genshin-compat:miao-render",
+    KEY,
+    OWNER,
   )
+  ctx?.onDispose(dispose)
 }

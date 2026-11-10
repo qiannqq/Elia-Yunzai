@@ -25,13 +25,16 @@ export default class genshinCompat extends plugin {
     })
   }
 
-  async init() {
+  /**
+   * @param ctx 内核给的插件上下文，登记的清理函数会随卸载一起回收
+   */
+  async init(ctx) {
     const hasMiao = fs.existsSync("./plugins/miao-plugin")
     const hasGenshin = fs.existsSync("./plugins/genshin")
 
-    installRenderData()
-    if (hasMiao || hasGenshin) installMsgPrefix()
-    if (hasGenshin) await installGenshinRuntime()
+    installRenderData(ctx)
+    if (hasMiao || hasGenshin) installMsgPrefix(ctx)
+    if (hasGenshin) await installGenshinRuntime(ctx)
 
     logger.mark(
       `[genshin-compat] 已装载：miao-plugin ${hasMiao ? "有" : "无"}，genshin ${hasGenshin ? "有" : "无"}`,

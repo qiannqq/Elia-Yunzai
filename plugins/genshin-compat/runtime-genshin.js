@@ -77,7 +77,7 @@ async function initUser(runtime) {
   })
 }
 
-export async function installGenshinRuntime() {
+export async function installGenshinRuntime(ctx) {
   try {
     await loadModels()
   } catch (err) {
@@ -87,11 +87,16 @@ export async function installGenshinRuntime() {
   }
 
   const key = "genshin-compat"
+  /** 每个登记项的 Disposer 都交给插件作用域，卸载时逆序回收 */
+  const keep = dispose => {
+    if (typeof dispose === "function") ctx?.onDispose(dispose)
+    return dispose
+  }
 
-  Runtime.provide("gsCfg", () => gsCfg, key)
-  Runtime.provide("MysInfo", () => MysInfo, key)
-  Runtime.provide("NoteUser", () => NoteUser, key)
-  Runtime.provide("MysUser", () => MysUser, key)
+  keep(Runtime.provide("gsCfg", () => gsCfg, key))
+  keep(Runtime.provide("MysInfo", () => MysInfo, key))
+  keep(Runtime.provide("NoteUser", () => NoteUser, key))
+  keep(Runtime.provide("MysUser", () => MysUser, key))
 
   /**
    * 获取MysInfo实例
@@ -99,7 +104,7 @@ export async function installGenshinRuntime() {
    * @param targetType all: 所有用户均可， cookie：查询用户必须具备Cookie
    * @returns {Promise<boolean|MysInfo>}
    */
-  Runtime.provide(
+  keep(Runtime.provide(
     "getMysInfo",
     runtime => async (targetType = "all") => {
       runtime._mysInfo ||= {}
@@ -112,9 +117,9 @@ export async function installGenshinRuntime() {
       return runtime._mysInfo[targetType]
     },
     key,
-  )
+  ))
 
-  Runtime.provide("getUid", runtime => async () => await MysInfo.getUid(runtime.e), key)
+  keep(Runtime.provide("getUid", runtime => async () => await MysInfo.getUid(runtime.e), key))
 
   /**
    * 获取MysApi实例
@@ -124,7 +129,7 @@ export async function installGenshinRuntime() {
    * @param isSr 是否为星穹铁道
    * @returns {Promise<boolean|MysApi>}
    */
-  Runtime.provide(
+  keep(Runtime.provide(
     "getMysApi",
     runtime => async (targetType = "all", option = {}, isSr = false) => {
       let mys = await runtime.getMysInfo(targetType)
@@ -135,7 +140,7 @@ export async function installGenshinRuntime() {
       return false
     },
     key,
-  )
+  ))
 
   /**
    * 生成MysApi实例
@@ -145,15 +150,15 @@ export async function installGenshinRuntime() {
    * @param isSr 是否为星穹铁道
    * @returns {MysApi}
    */
-  Runtime.provide(
+  keep(Runtime.provide(
     "createMysApi",
     () => (uid, ck, option, isSr = false) => {
       if (isSr) option.game = "sr"
       return new MysApi(uid, ck, option, isSr)
     },
     key,
-  )
+  ))
 
-  Runtime.onInit(initUser, key)
+  keep(Runtime.onInit(initUser, key))
   return true
 }
