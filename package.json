@@ -16,7 +16,9 @@
     "restart": "pm2 restart ./config/pm2/pm2.json",
     "log": "node ./lib/tools/log.js",
     "ksr": "node ./lib/tools/ksr.js",
-    "lint": "git ls-files '*.js'|xargs prettier --write --list-different"
+    "lint": "git ls-files '*.js'|xargs prettier --write --list-different",
+    "check:kernel": "node ./lib/tools/kernel-purity.js",
+    "test:kernel": "node ./lib/tools/kernel-selftest.js"
   },
   "dependencies": {
     "art-template": "4.13.2",
