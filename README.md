@@ -4,19 +4,16 @@
   <img src="./resources/elia.png" width="30%" height="30%">
 </p>
 
-由Miao-Yunzai修改，主轻量化，优化性能/内存开销，增加和修改一些机制
+基于Elia-Yunzai Kernel的Yunzai机器人
 
 ### 简介
-开发该Yunzai的目的是本组织成员不便迁移到TRSS-Yunzai，又需要一个轻量化但可以正常使用的Miao-Yunzai，因此 **Elia-Yunzai** 诞生了
+Elia-Yunzai是基于Elia-Yunzai Kernel所搭建的Yunzai框架
 
-### 修改的机制
-1. 内核与插件解耦：lib 不再 import 任何插件，也不写死插件目录
-* miao-plugin、genshin 均为可选插件；安装后由 `plugins/genshin-compat` 提供米游社相关能力
-* 内核边界由 `pnpm run check:kernel` 检查，`pnpm run test:kernel` 覆盖不依赖第三方模块的部分
-2. 登录与收发由适配器插件负责，内核不依赖具体协议库；默认跳过登录，需要可以在配置文件中打开
-3. 重写Redis启动逻辑
-4. 插件包(含index.js的大型插件)可以通过调用`changePlugin`方法来热重载插件，key参数为插件包的目录名（例如miao-plugin）
-5. 修改重启逻辑，防止重启时报错父子进程不协调的问题
+### 与Miao-Yunzai和TRSS-Yunzai有哪些不同
+Elia-Yunzai是基于Elia-Yunzai Kernel所搭建的Yunzai框架。差异是基于内核的，内核不依赖任何基础设施，使用npm包管理器安装依赖后，导入`./lib/bot.js`并执行`await Yunzai.run()`可拉起内核独立运行
+
+Elia-Yunzai（本仓库）实际上是基于Elia-Yunzai Kernel，预装了一些渲染器和genshin兼容层的产物，旨在轻量化、开箱即用
+
 
 更多详见[CHANGELOG.md](./CHANGELOG.md)
 
@@ -91,6 +88,7 @@ git clone --depth=1 https://gitee.com/TimeRainStarSky/Yunzai-genshin.git ./plugi
 - 契约：`create` 返回的 Bot 需带 `uin` 并能接收 `on(event, handler)`；`login` 返回 `false` 表示本次不登录、只加载插件。
 - 启用：`config/config/bot.yaml` 的 `adapter`，留空时使用唯一已注册的适配器。
 - 插件自带适配器：`ctx.adapter(provider)` 或全局 `defineAdapter`，插件卸载时自动摘除。
+- 旧式适配器（如 snowluma）自行维护 `Bot`、`Bot[uin]` 与全局 `Bot.gl` / `Bot.fl` / `Bot.gml`，内核不代理、不覆盖；`Bot.adapter` 出现新账号时只输出一条接入日志。
 - 没有可用适配器时不中断启动：内核提供一个完整的占位 Bot（含 `emit` 等常用方法），插件照常加载，只在日志里提示。
 
 ### 跨内核插件（同时兼容 Yunzai-NG）
