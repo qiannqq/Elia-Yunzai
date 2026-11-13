@@ -106,7 +106,9 @@ export default {
 }
 ```
 
-目录入口与类插件写法照旧加载。`ctx` 与 NG 同名同义：`every` / `cron` / `on` / `middleware` / `route` / `static` / `websocket` / `provide` / `inject` / `require` / `waitFor` / `cache` / `onDispose` / `resource` / `adopt`。
+目录入口与类插件写法照旧加载。类插件的 `init` 与上游一致不接收参数，需要上下文用 `this.ctx`；对象插件的 `setup(ctx)` 才接收 ctx。
+
+`ctx` 与 NG 同名同义：`every` / `cron` / `on` / `middleware` / `route` / `static` / `websocket` / `provide` / `inject` / `require` / `waitFor` / `cache` / `onDispose` / `resource` / `adopt`。
 
 定时任务经 `ctx.every` / `ctx.cron` 登记；自建句柄交给 `ctx.onDispose`，或使用 `ctx.adopt(timer)`：
 

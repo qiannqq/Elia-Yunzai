@@ -26,9 +26,10 @@ export default class genshinCompat extends plugin {
   }
 
   /**
-   * @param ctx 内核给的插件上下文，登记的清理函数会随卸载一起回收
+   * 内核给的插件上下文在 this.ctx，登记的清理函数会随卸载一起回收
    */
-  async init(ctx) {
+  async init() {
+    const ctx = this.ctx
     const hasMiao = fs.existsSync("./plugins/miao-plugin")
     const hasGenshin = fs.existsSync("./plugins/genshin")
 
